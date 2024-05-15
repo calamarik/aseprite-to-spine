@@ -104,19 +104,23 @@ function captureLayers(layers, sprite, visibilityStates)
     local separator = app.fs.pathSeparator
     
     for i, layer in ipairs(layers) do
-        -- Ignore groups and non-visible layers
         if (not layer.isGroup and visibilityStates[i] == true) then
-            layer.isVisible = true
-            local cel = layer.cels[1]
-            local cropped = Sprite(sprite)
-            cropped:crop(cel.position.x, cel.position.y, cel.bounds.width, cel.bounds.height)
-            cropped:saveCopyAs(outputDir .. separator .. "images" .. separator .. layer.name .. ".png")
-            cropped:close()
-            layer.isVisible = false
-            local name = layer.name
-            slotsJson[index] = string.format([[ { "name": "%s", "bone": "%s", "attachment": "%s" } ]], name, "root", name)
-            skinsJson[index] = string.format([[ "%s": { "%s": { "x": %d, "y": %d, "width": 1, "height": 1 } } ]], name, name, cel.bounds.width/2 + cel.position.x - sprite.bounds.width/2, sprite.bounds.height - cel.position.y - cel.bounds.height/2)
-            index = index + 1
+            for u = 1, #layer.cels do 
+                local cel = layer.cels[u]
+                if cel then
+                    local cropped = Sprite(sprite.width, sprite.height) -- Create a new sprite with the same dimensions as the original sprite
+                    local newCel = cropped:newCel(cropped.layers[1], 1, cel.image, cel.position) -- Copy the cel you want to save to the new sprite
+                    cropped:crop(cel.position.x, cel.position.y, cel.bounds.width, cel.bounds.height)
+                    cropped:saveAs(outputDir .. separator .. "images" .. separator .. layer.name .. "_" .. u .. ".png") -- Save the new sprite to a file
+                    cropped:close()
+                    layer.isVisible = false  -- Make the layer invisible again before processing the next cell
+    
+                    local name = layer.name
+                    slotsJson[index] = string.format([[ { "name": "%s", "bone": "%s", "attachment": "%s" } ]], name, "root", name)
+                    skinsJson[index] = string.format([[ "%s": { "%s": { "x": %d, "y": %d, "width": 1, "height": 1 } } ]], name, name, cel.bounds.width/2 + cel.position.x - sprite.bounds.width/2, sprite.bounds.height - cel.position.y - cel.bounds.height/2)
+                    index = index + 1
+                end
+            end
         end
     end
 
